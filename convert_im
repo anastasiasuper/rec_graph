@@ -1,0 +1,105 @@
+import numpy as np
+from PIL import Image
+import cv2
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+def find_mora(src):
+    im = Image.open(src)
+    img = cv2.imread(src)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    ret, thresh = cv2.threshold(gray, 115, 255, cv2.THRESH_BINARY)
+    img_erode = cv2.erode(thresh, np.ones((3, 3), np.uint8), iterations=1)
+    # Get contours
+    contours, hierarchy = cv2.findContours(img_erode, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    output = img.copy()
+    reck = []
+    for idx, contour in enumerate(contours):
+        (x, y, w, h) = cv2.boundingRect(contour)
+        if hierarchy[0][idx][3] == 0:
+            cv2.rectangle(output, (x, y), (x + w, y + h), (255, 255, 0), 3)
+            reck.append((x + 3, y + 3, x + w - 3 , y + h - 3))
+
+    #print(reck)
+    #print(len(reck))
+    if len(reck) > 1:
+        reck_f = list(reck[1])
+        for i in range(0, len(reck)):
+            #reck[i] = list(reck[i])
+            #if ((reck[i][2] - reck[i][0]) + (reck[i][3] - reck[i][1])) > ((reck[i -1][2] - reck[i-1][0]) + (reck[i-1][3] - reck[i-1][1])):
+            if reck[i][0] < reck_f[0]:
+                reck_f[0] = reck[i][0]
+                #reck_f = reck[i]
+            if reck[i][1] < reck_f[1]:
+                reck_f[1] = reck[i][1]
+
+            if reck[i][2] > reck_f[2]:
+                reck_f[2] = reck[i][2]
+
+            if reck[i][3] > reck_f[3]:
+                reck_f[3] = reck[i][3]
+
+        reck_f = (list(reck_f))
+        #print(reck_f)
+        im_crop = im.crop(reck_f)
+        im_crop.save(src, quality=95)
+    elif len(reck) == 0:
+        #im_crop = im.crop(reck[0])
+        im.save(src, quality=95)
+    else:
+        reck[0] = (list(reck[0]))
+        im_crop = im.crop(reck[0])
+        im_crop.save(src, quality=95)
+
+
+
+def resize(src):
+    img = Image.open(src)
+    width = 100
+    height = 100
+    #print(src)
+    resized_img = img.resize((width, height), Image.ANTIALIAS)
+    #resized_img.show()
+    resized_img.save(src)
+
+def conv():
+    src = '/Users/nastya/Desktop/govno'
+    for i in os.listdir(src):
+        if i != '.DS_Store' and i != 'new' and i != 'nv':
+            find_mora(src + '/' + i)
+            resize(src + '/' + i)
+import sys
+
+def black_white(src):
+    image = cv2.imread(src)
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    ret, thresh = cv2.threshold(gray_image, 128, 255, cv2.THRESH_BINARY_INV)
+    #thresh = cv2.imread(src)
+    print(thresh)
+    """for y in range(len(thresh)):
+        for x in range(len(thresh[y])):
+            print(thresh[y][x])
+            if thresh[y][x] == 255:
+                thresh[y][x] = 0
+            elif thresh[y][x] == 0:
+                thresh[y][x] = 255"""
+    cv2.imwrite(src, thresh)
+
+#conv()
+def bl_c():
+    src = '/Users/nastya/Desktop/hiragana_all'
+    for i in os.listdir(src):
+        if i != '.DS_Store' and i != 'new' and i != 'nv' and (i == 'nu' or i == 'di'):
+            for j in os.listdir(src + '/' + i):
+                if j != '.DS_Store' and j != 'new' and j != 'nv':
+                    print(src + '/' + i +'/' + j)
+                    black_white(src + '/' + i +'/' + j)
+
+#bl_c()
+
+def rename():
+    src='/Users/nastya/Desktop/g/petya_copy'
+    for i in os.listdir(src):
+        if i != '.DS_Store' and i != 'new' and i != 'nv':
+            os.rename(src +'/' + i, src +'/' + 'new_' + i )
+rename()
